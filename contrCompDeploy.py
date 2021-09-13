@@ -2,9 +2,11 @@ import subprocess
 import os  # 文件读写
 import shutil  # 文件复制、移动
 import re  # 正则表达式
-import json     # json
+import json  # json
+from typing import List, Set
+
 import _pysha3  # 安装pysha3后导入
-from contrbin import ContractDisasm     # 合约反汇编代码处理
+from contrbin import ContractDisasm  # 合约反汇编代码处理
 
 # 文件夹路径结尾须加”/"
 truffle_project_path = '/home/hhy/trufflePro/'  # truffle项目目录
@@ -15,7 +17,7 @@ bin_dir_path = truffle_project_path + 'bins/'  # bin文件存放目录
 abi_sig_dir_path = truffle_project_path + 'abi_sigs/'  # abi签名文件存放目录
 bin_sig_dir_path = truffle_project_path + 'bin_sigs/'  # bin签名文件存放目录
 addrmap_file_path = truffle_project_path + 'addrmap.csv'  # 合约地址文件
-runtime_bin_dir_path = truffle_project_path + 'runtime_bins/'   # runtime字节码文件存放目录
+runtime_bin_dir_path = truffle_project_path + 'runtime_bins/'  # runtime字节码文件存放目录
 
 contract_min_version = 4  # 合约最老大版本
 contract_max_version = 6  # 合约最新大版本
@@ -25,17 +27,17 @@ contract_deploying_group_size = 6  # 1组待部署合约的合约数
 
 
 def main():
-    # if not contracts_compile():
-    #     return
+    if not contracts_compile():
+        return
     get_ABIs_and_BINs()
     get_ABI_sigs()
     get_BIN_sigs()
-    # create_deploy_files()
-    # contracts_deploy()
+    create_deploy_files()
+    contracts_deploy()
     pass
 
 
-def handle_path_same_name(src_path, dest_path):
+def handle_path_same_name(src_path: str, dest_path: str):
     """
     处理同名文档，将原同名文档重命名
     :param src_path: 原重名文件路径
@@ -49,7 +51,7 @@ def handle_path_same_name(src_path, dest_path):
         os.rename(src_path, dest_path)
 
 
-def make_dir(path):
+def make_dir(path: str):
     """
     新建文件夹
     :param path:文件夹路径
@@ -59,7 +61,7 @@ def make_dir(path):
         os.mkdir(path)
 
 
-def remove_dir(path):
+def remove_dir(path: str):
     """
     删除文件夹
     :param path: 文件夹路径
@@ -69,7 +71,7 @@ def remove_dir(path):
         shutil.rmtree(path)
 
 
-def get_sol_version(file_path):
+def get_sol_version(file_path: str):
     """
     获取合约文件的版本号
     :param file_path:合约文件路径
@@ -87,7 +89,7 @@ def get_sol_version(file_path):
         return default_contract_version.split('.')[1], default_contract_version
 
 
-def contracts_compile():
+def contracts_compile() -> bool:
     """
     编译合约
     :return 合约编译过程中是否有出错，出错返回False
@@ -128,7 +130,7 @@ def contracts_compile():
     return comp_flag
 
 
-def contracts_compile_by_truffle():
+def contracts_compile_by_truffle() -> bool:
     """
     对每个大版本版本的合约进行编译
     :return 编译是否成功
@@ -147,7 +149,7 @@ def contracts_compile_by_truffle():
         return False
 
 
-def get_contract_build_info(dir_path, file_name):
+def get_contract_build_info(dir_path: str, file_name: str) -> dict:
     """
     获取Truffle编译合约后的json文件信息
     :param dir_path: json文件目录
@@ -157,36 +159,36 @@ def get_contract_build_info(dir_path, file_name):
     :return: 编译后的信息json对象
     :rtype: dict
     """
-    with open(dir_path+file_name) as rfo:
+    with open(dir_path + file_name) as rfo:
         return json.load(rfo)
 
 
-def get_contract_ABI(build_info):
+def get_contract_ABI(build_info: dict):
     """
     从编译信息中获取合约ABI文件
     :param build_info: 合约编译信息
     :type build_info: dict
     """
     file_name = build_info['contractName'] + '.abi'
-    with open(abi_dir_path+file_name, 'w') as wfo:
+    with open(abi_dir_path + file_name, 'w') as wfo:
         json.dump(build_info['abi'], wfo)
 
 
-def get_contract_BIN(build_info):
+def get_contract_BIN(build_info: dict):
     """
     从编译信息中获取合约的BIN文件（runtime字节码）
     :param build_info: 合约编译信息
     :type build_info: dict
     """
     file_name = build_info['contractName'] + '.bin'
-    with open(bin_dir_path+file_name, 'w') as wfo:
+    with open(bin_dir_path + file_name, 'w') as wfo:
         tmp = build_info['deployedBytecode'].lstrip('0x')
         wfo.write(tmp)
 
 
-def get_contract_runtime_BIN(build_info):
+def get_contract_runtime_BIN(build_info: dict):
     file_name = build_info['contractName'] + '.evm'
-    with open(runtime_bin_dir_path+file_name, 'w') as wfo:
+    with open(runtime_bin_dir_path + file_name, 'w') as wfo:
         wfo.write(build_info['deployedBytecode'])
 
 
@@ -213,7 +215,7 @@ def get_ABIs_and_BINs():
     print("Got contracts' ABIs and BINs!\n")
 
 
-def set_compile_version(version_str):
+def set_compile_version(version_str: str):
     """
     设置truffle-config.js文件中的solc版本
     :param version_str：需要设定的版本
@@ -229,7 +231,7 @@ def set_compile_version(version_str):
     print(f'Truffle compiled version is set to {version_str}')
 
 
-def check_contract_constructor(file_name):
+def check_contract_constructor(file_name: str) -> List[dict]:
     """
     检查合约的构造函数， 若需要输入参数则进行输入
     :param file_name: 合约文件名
@@ -249,7 +251,7 @@ def check_contract_constructor(file_name):
     inputs = []
     for elem in abi:
         if 'type' in elem and elem['type'] == 'constructor':
-            if 'inputs' in elem and elem['inputs']:     # 判断合约有无构造函数且须参数输入
+            if 'inputs' in elem and elem['inputs']:  # 判断合约有无构造函数且须参数输入
                 inputs = elem['inputs']
             break
     if not inputs:
@@ -280,7 +282,7 @@ def create_deploy_files():
 
             deploy_info = 'Contract'
             ipt = check_contract_constructor(sol_name)
-            if ipt:     # 合约构造函数须参数添加
+            if ipt:  # 合约构造函数须参数添加
                 for i in range(len(ipt)):
                     deploy_info += f",{ipt[i]['value']}"
 
@@ -323,7 +325,7 @@ def contracts_deploy():
         i = 0
         try:
             while i < len(result):
-                if result[i+1][6] == '':
+                if result[i + 1][6] == '':
                     addr_map[result[i][4]] = result[i + 1][5]
                 i += 2
         except IndexError:
@@ -342,7 +344,7 @@ def contracts_deploy():
         print("Contracts' addresses have been saved!\n")
 
 
-def get_funcs(abi):
+def get_funcs(abi: dict) -> List[dict]:
     """
     获取函数
     :param abi: 该合约abi的json对象
@@ -357,7 +359,7 @@ def get_funcs(abi):
     return func_list
 
 
-def get_func_sig(func):
+def get_func_sig(func: dict):
     """
     获取函数签名
     :param func: 函数对象
@@ -379,7 +381,7 @@ def get_func_sig(func):
         return name + '(' + types_str + ')'
 
 
-def get_func_sig_hash(sig):
+def get_func_sig_hash(sig: str) -> str:
     """
     获取函数签名的hash值，即函数选择器
     :param sig: 函数签名
@@ -394,7 +396,7 @@ def get_func_sig_hash(sig):
     return bytes4
 
 
-def get_contract_ABI_sig(dir_path, file_name):
+def get_contract_ABI_sig(dir_path: str, file_name: str):
     """
     单个文件获取函数选择器
     :param dir_path: 合约ABI文件夹路径
@@ -405,11 +407,11 @@ def get_contract_ABI_sig(dir_path, file_name):
     with open(dir_path + file_name) as rfo:
         abi_info = json.load(rfo)
         if abi_info:
-            func_list = get_funcs(abi_info)     # 获取合约的函数列表
+            func_list = get_funcs(abi_info)  # 获取合约的函数列表
             if func_list:
-                wfo = open(abi_sig_dir_path+file_name+'.sig', 'w')
+                wfo = open(abi_sig_dir_path + file_name + '.sig', 'w')
                 for func in func_list:
-                    sig = get_func_sig(func)    # 获取函数签名
+                    sig = get_func_sig(func)  # 获取函数签名
                     if sig:
                         sig_hash = get_func_sig_hash(sig)  # hash处理函数签名获取函数选择器
                         wfo.write(f'{sig_hash}:{sig}\n')
@@ -435,7 +437,7 @@ def get_BIN_sigs():
     bin_dir_list = os.listdir(bin_dir_path)
     for bin_file_name in bin_dir_list:
         # print(bin_file_name)
-        if os.path.isfile(bin_dir_path+bin_file_name):
+        if os.path.isfile(bin_dir_path + bin_file_name):
             try:
                 get_contract_BIN_sig(bin_dir_path, bin_file_name)
             except:
@@ -443,7 +445,7 @@ def get_BIN_sigs():
     print("Got contracts' BIN signatures!\n")
 
 
-def save_func_disasm_codes(func_sig, func_codes):
+def save_func_disasm_codes(func_sig: str, func_codes: List[List[str]]):
     """
     存储分段后的函数反汇编代码
     :param func_sig: 函数签名
@@ -458,7 +460,7 @@ def save_func_disasm_codes(func_sig, func_codes):
             wfo.write('\n\n')
 
 
-def has_CALL_opcode(func_codes, i):
+def has_CALL_opcode(func_codes: List[List[str]], i: int) -> bool:
     """
     判断函数第i段代码是否含有CALL字节码
     :param func_codes: 函数代码列表
@@ -473,7 +475,7 @@ def has_CALL_opcode(func_codes, i):
     return False
 
 
-def get_extern_call_sigs_from_codes(func_codes):
+def get_extern_call_sigs_from_codes(func_codes: List[List[str]]) -> Set[str]:
     """
     获取函数的外部调用函数选择器
     :param func_codes: 函数代码列表
@@ -484,12 +486,12 @@ def get_extern_call_sigs_from_codes(func_codes):
     for i in range(len(func_codes)):
         for code in func_codes[i]:
             # 当前代码段有函数选择器， 且下一个代码段有CALL指令
-            if code.startswith('PUSH4 ') and code.split()[1] != '0xffffffff' and has_CALL_opcode(func_codes, i+1):
+            if code.startswith('PUSH4 ') and code.split()[1] != '0xffffffff' and has_CALL_opcode(func_codes, i + 1):
                 extern_call_sigs.add(code.split()[1])
     return extern_call_sigs
 
 
-def get_contract_BIN_sig(dir_path, file_name):
+def get_contract_BIN_sig(dir_path: str, file_name: str):
     """
     获取单个合约的二进制签名
     :param dir_path: 合约BIN文件夹路径
@@ -497,8 +499,8 @@ def get_contract_BIN_sig(dir_path, file_name):
     :param file_name: 合约BIN文件名
     :type file_name: str
     """
-    cds = ContractDisasm()      # 构建反汇编对象
-    cds.get_runtime_data(dir_path+file_name)
+    cds = ContractDisasm()  # 构建反汇编对象
+    cds.get_runtime_data(dir_path + file_name)
     func_sigs = cds.get_func_sigs()
     bin_sigs_dict = {}
     for func in func_sigs:
