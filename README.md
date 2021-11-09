@@ -13,4 +13,4 @@
 4. 打开用于部署合约的私有链, 解锁账户后进行挖矿
 5. 根据运行环境修改脚本 `contrCompDeploy.py` 中的路径等参数
 6. 运行脚本 `contrCompDeploy.py` 
-* 具体参考: [智能合约模糊测试编译部署脚本 - 掘金](https://juejin.cn/post/7027462095511748615/)
+* 具体参考: [智能合约模糊测试编译部署脚本_LostUnravel的博客-CSDN博客](https://blog.csdn.net/LostUnravel/article/details/120273355)
